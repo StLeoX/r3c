@@ -929,8 +929,8 @@ public: // ZSET
 public: // STREAM (key like kafka's topic), available since 5.0.0.
     // Removes one or multiple messages from the pending entries list (PEL) of a stream consumer group.
     // The command returns the number of messages successfully acknowledged.
-    int xack(const std::string& key, const std::string& groupname, const std::vector<std::string>& ids, Node* which=NULL, int num_retries=NUM_RETRIES);
-    int xack(const std::string& key, const std::string& groupname, const std::string& id, Node* which=NULL, int num_retries=NUM_RETRIES);
+    int xack(const std::string& key, const std::string& groupname, const std::vector<std::string>& ids, Node* which=NULL, int num_retries=0);
+    int xack(const std::string& key, const std::string& groupname, const std::string& id, Node* which=NULL, int num_retries=0);
 
     // Returns the ID of the added entry. The ID is the one auto-
     // generated if * is passed as ID argument, otherwise the command just
@@ -939,10 +939,10 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
     // c '~' or '='
     std::string xadd(const std::string& key, const std::string& id,
             const std::vector<FVPair>& values, int64_t maxlen, char c,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     std::string xadd(const std::string& key, const std::string& id,
             const std::vector<FVPair>& values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // Create a new consumer group associated with a stream.
     // There are no hard limits to the number of consumer groups you can associate to a given stream.
@@ -969,24 +969,25 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
 
     // Reads more than one keys
     // xread is a read command, can be called on slaves, xreadgroup is not
+    // NOTICE: The size of keys should be equal to the size of ids.
     void xread(const std::vector<std::string>& keys, const std::vector<std::string>& ids,
             int64_t count, int64_t block_milliseconds, std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xread(const std::vector<std::string>& keys, const std::vector<std::string>& ids,
             int64_t count, std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xread(const std::vector<std::string>& keys, const std::vector<std::string>& ids,
             std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // Only read one key
-    void xread(const std::string& key, const std::vector<std::string>& ids,
+    void xread(const std::string& key, const std::string& id,
             int64_t count, int64_t block_milliseconds, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     // Use '>' as id
     void xread(const std::string& key,
             int64_t count, int64_t block_milliseconds, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // The consumer name is the string that is used by the client to identify itself inside the group.
     // The consumer is auto created inside the consumer group the first time it is saw.
@@ -999,59 +1000,71 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
     // The client will have to acknowledge the message processing using xack in order for
     // the pending entry to be removed from the PEL. The PEL can be inspected using the xpending command.
     //
-    // The special > ID, which means that the consumer want to receive
+    // The ID to specify in the STREAMS option when using XREADGROUP can be one of the following two:
+    //
+    // 1) The special > ID, which means that the consumer want to receive
     // only messages that were never delivered to any other consumer.
     // It just means, give me new messages.
+    //
+    // 2) Any other ID, that is, 0 or any other valid ID or incomplete ID (just the millisecond time part),
+    // will have the effect of returning entries that are pending for the consumer sending the command
+    // with IDs greater than the one provided. So basically if the ID is not >,
+    // then the command will just let the client access its pending entries: messages delivered to it,
+    // but not yet acknowledged. Note that in this case, both BLOCK and NOACK are ignored.
+    //
+    // NOTICE: The size of keys should be equal to the size of ids.
     void xreadgroup(const std::string& groupname, const std::string& consumername,
             const std::vector<std::string>& keys, const std::vector<std::string>& ids,
             int64_t count, int64_t block_milliseconds, bool noack, std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xreadgroup(const std::string& groupname,
             const std::string& consumername, const std::vector<std::string>& keys,
             const std::vector<std::string>& ids, int64_t count, bool noack, std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xreadgroup(const std::string& groupname, const std::string& consumername,
             const std::vector<std::string>& keys, const std::vector<std::string>& ids,
             bool noack, std::vector<Stream>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xreadgroup(const std::string& groupname, const std::string& consumername,
-            const std::string& key, const std::vector<std::string>& ids,
+            const std::string& key, const std::string& id,
             int64_t count, int64_t block_milliseconds, bool noack, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     // Use '>' as id
     void xreadgroup(const std::string& groupname, const std::string& consumername,
             const std::string& key, int64_t count, int64_t block_milliseconds,
             bool noack, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // Removes the specified entries from a stream, and returns the number of
     // entries deleted, that may be different from the number of IDs passed to the
     // command in case certain IDs do not exist.
-    int xdel(const std::string& key, const std::vector<std::string>& ids, Node* which=NULL, int num_retries=NUM_RETRIES);
-    int xdel(const std::string& key, const std::string& id, Node* which=NULL, int num_retries=NUM_RETRIES);
+    int xdel(const std::string& key, const std::vector<std::string>& ids, Node* which=NULL, int num_retries=0);
+    int xdel(const std::string& key, const std::string& id, Node* which=NULL, int num_retries=0);
 
     // Trims the stream to a given number of items, evicting older items (items with lower IDs) if needed
     // Returns the number of entries deleted from the stream
-    int64_t xtrim(const std::string& key, int64_t maxlen, char c, Node* which=NULL, int num_retries=NUM_RETRIES);
-    int64_t xtrim(const std::string& key, int64_t maxlen, Node* which=NULL, int num_retries=NUM_RETRIES);
+    int64_t xtrim(const std::string& key, int64_t maxlen, char c, Node* which=NULL, int num_retries=0);
+    int64_t xtrim(const std::string& key, int64_t maxlen, Node* which=NULL, int num_retries=0);
 
     // Returns the number of entries inside a stream. If the specified key does not
     // exist the command returns zero, as if the stream was empty.
-    int64_t xlen(const std::string& key, Node* which=NULL, int num_retries=NUM_RETRIES);
+    int64_t xlen(const std::string& key, Node* which=NULL, int num_retries=0);
 
     // Returns the stream entries matching a given range of IDs
     // start The '-' special ID mean respectively the minimum ID possible inside a stream
     // end The '+' special ID mean respectively the maximum ID possible inside a stream
     void xrange(const std::string& key,
             const std::string& start, const std::string& end, int64_t count, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
-    void xrange(const std::string& key, const std::string& start, const std::string& end, std::vector<StreamEntry>* values, Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
+    void xrange(const std::string& key,
+            const std::string& start, const std::string& end, std::vector<StreamEntry>* values,
+            Node* which=NULL, int num_retries=0);
     void xrevrange(const std::string& key,
             const std::string& end, const std::string& start, int64_t count, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xrevrange(const std::string& key,
             const std::string& end, const std::string& start, std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // Fetching data from a stream via a consumer group,
     // and not acknowledging such data, has the effect of creating pending entries.
@@ -1060,11 +1073,11 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
     int xpending(const std::string& key, const std::string& groupname,
             const std::string& start, const std::string& end, int count, const std::string& consumer,
             std::vector<struct DetailedPending>* pendings,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     int xpending(const std::string& key, const std::string& groupname,
             const std::string& start, const std::string& end, int count,
             std::vector<struct DetailedPending>* pendings,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // start the smallest ID among the pending messages
     // end the greatest ID among the pending messages
@@ -1072,7 +1085,9 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
     // consumers the list of consumers in the consumer group with at least one pending message
     //
     // Returns the total number of pending messages for this consumer group
-    int xpending(const std::string& key, const std::string& groupname, struct GroupPending* groups, Node* which=NULL, int num_retries=NUM_RETRIES);
+    int xpending(const std::string& key,
+            const std::string& groupname, struct GroupPending* groups,
+            Node* which=NULL, int num_retries=0);
 
     // Gets ownership of one or multiple messages in the Pending Entries List
     // of a given stream consumer group.
@@ -1081,23 +1096,23 @@ public: // STREAM (key like kafka's topic), available since 5.0.0.
             int64_t minidle, const std::vector<std::string>& ids,
             int64_t idletime, int64_t unixtime, int64_t retrycount, bool force,
             std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xclaim(
             const std::string& key, const std::string& groupname, const std::string& consumer,
             int64_t minidle, const std::vector<std::string>& ids,
             std::vector<StreamEntry>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xclaim(
             const std::string& key, const std::string& groupname, const std::string& consumer,
             int64_t minidle, const std::vector<std::string>& ids,
             int64_t idletime, int64_t unixtime, int64_t retrycount, bool force,
             std::vector<std::string>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
     void xclaim(
             const std::string& key, const std::string& groupname, const std::string& consumer,
             int64_t minidle, const std::vector<std::string>& ids,
             std::vector<std::string>* values,
-            Node* which=NULL, int num_retries=NUM_RETRIES);
+            Node* which=NULL, int num_retries=0);
 
     // Get the list of every consumer in a specific consumer group
     int xinfo_consumers(const std::string& key, const std::string& groupname, std::vector<struct ConsumerInfo>* infos, Node* which=NULL, int num_retries=NUM_RETRIES);

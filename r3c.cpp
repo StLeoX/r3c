@@ -3625,7 +3625,7 @@ void CRedisClient::xreadgroup(
         errinfo.errtype = "ERR";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "wrong number of arguments for 'xreadgroup' command";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREADGROUP][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else if (keys.size() != ids.size())
@@ -3634,7 +3634,7 @@ void CRedisClient::xreadgroup(
         errinfo.errtype = "ERR";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "unbalanced XREADGROUP list of streams: for each stream key an ID or '$' must be specified";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREADGROUP][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else if (cluster_mode() && keys_crossslots(keys))
@@ -3643,7 +3643,7 @@ void CRedisClient::xreadgroup(
         errinfo.errtype = "CROSSSLOT";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "keys in request don't hash to the same slot";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREADGROUP][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else
@@ -3708,7 +3708,7 @@ void CRedisClient::xreadgroup(
 // Only read one key
 void CRedisClient::xreadgroup(
         const std::string& groupname, const std::string& consumername,
-        const std::string& key, const std::vector<std::string>& ids,
+        const std::string& key, const std::string& id,
         int64_t count, int64_t block_milliseconds,
         bool noack,
         std::vector<StreamEntry>* values,
@@ -3716,8 +3716,10 @@ void CRedisClient::xreadgroup(
 {
     std::vector<Stream> streams;
     std::vector<std::string> keys(1);
+    std::vector<std::string> ids(1);
 
     keys[0] = key;
+    ids[0] = id;
     xreadgroup(groupname, consumername, keys, ids, count, block_milliseconds, noack, &streams, which, num_retries);
     if (!streams.empty())
         values->swap(streams[0].entries);
@@ -3756,7 +3758,7 @@ void CRedisClient::xread(
         errinfo.errtype = "ERR";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "wrong number of arguments for 'xread' command";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREAD][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else if (keys.size() != ids.size())
@@ -3765,7 +3767,7 @@ void CRedisClient::xread(
         errinfo.errtype = "ERR";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "unbalanced XREAD list of streams: for each stream key an ID or '$' must be specified";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREAD][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else if (cluster_mode() && keys_crossslots(keys))
@@ -3774,7 +3776,7 @@ void CRedisClient::xread(
         errinfo.errtype = "CROSSSLOT";
         errinfo.errcode = ERROR_PARAMETER;
         errinfo.raw_errmsg = "keys in request don't hash to the same slot";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XREAD][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else
@@ -3825,15 +3827,17 @@ void CRedisClient::xread(
 
 // Only read one key
 void CRedisClient::xread(
-        const std::string& key, const std::vector<std::string>& ids,
+        const std::string& key, const std::string& id,
         int64_t count, int64_t block_milliseconds,
         std::vector<StreamEntry>* values,
         Node* which, int num_retries)
 {
     std::vector<Stream> streams;
     std::vector<std::string> keys(1);
+    std::vector<std::string> ids(1);
 
     keys[0] = key;
+    ids[0] = id;
     xread(keys, ids, count, block_milliseconds, &streams, which, num_retries);
     if (!streams.empty())
         values->swap(streams[0].entries);
@@ -4211,7 +4215,7 @@ void CRedisClient::xclaim(
         struct ErrorInfo errinfo;
         errinfo.errtype = "ERR";
         errinfo.raw_errmsg = "wrong number of arguments for 'xclaim' command";
-        errinfo.errmsg = format_string("[R3C_XPENDING][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
+        errinfo.errmsg = format_string("[R3C_XCLAIM][%s:%d] %s", __FILE__, __LINE__, errinfo.raw_errmsg.c_str());
         THROW_REDIS_EXCEPTION(errinfo);
     }
     else
